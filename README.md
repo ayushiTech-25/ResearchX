@@ -1,58 +1,191 @@
-# ResearchX — AI Research Scientist
+# ResearchX
 
-A Replit-friendly full-stack research intelligence workspace. React, TypeScript, Vite, Express, PostgreSQL, Prisma, and live scholarly APIs are wired together; secrets remain server-side.
+### Research Smarter. Discover More.
 
-## Run on Replit
+ResearchX is an AI-powered research intelligence platform for exploring scholarly literature, discovering researchers, understanding research trends, and organizing work in one workspace.
 
-1. Create a PostgreSQL database and set `DATABASE_URL` in Replit Secrets.
-2. Set `JWT_SECRET` to at least 32 random characters in Replit Secrets (generate one locally with `openssl rand -base64 32`). Configure an AI provider in Replit Secrets to enable the assistant and paper analyzer; restart the server after changing secrets.
-3. Run `npm install`, then `npm run db:migrate` and `npm run db:generate` to apply the checked-in PostgreSQL migrations and generate the Prisma client.
-4. Start the application with `npm run dev`. Vite serves port 5173 and proxies `/api` requests to Express on port 3001.
+## About the Project
 
-For local development, create a project-root `.env` containing `GEMINI_API_KEY=` and add your key there. The Express server loads this file through `dotenv/config`; Vite proxies requests to Express and never receives the key. The AI research assistant and paper analyzer use the server-side Gemini Interactions API with the `gemini-3.5-flash-lite` model. Restart `npm run dev` after changing the key. Configure `DATABASE_URL` and `JWT_SECRET` in the same private server environment for database-backed account features. Never put provider credentials in a `VITE_` variable, frontend code, browser storage, or a URL. Then run `npm install`, `npm run db:migrate`, `npm run db:generate`, and `npm run dev`. The server rejects registration and sign-in if the JWT secret is missing or shorter than 32 characters. The OpenAlex APIs used here are public and do not require an API key. AI is unavailable until `GEMINI_API_KEY` is configured.
+ResearchX brings live scholarly data and AI-assisted research tools together in a focused workspace. Search papers and researchers using OpenAlex, with Crossref support for paper discovery and DOI records. Explore topic and publication trends, review researcher profiles, and organize selected work into private collections and project workspaces.
 
-The first migration is a baseline matching the original three-model schema. Subsequent migrations add normalized research/workspace records and a user-scoped activity feed. For a fresh database, `npm run db:migrate` applies all migrations. For a database created from the earlier app with `db:push`, mark the baseline as applied once with `npx prisma migrate resolve --applied 20261003000000_initial`, then run `npm run db:migrate` to apply the upgrade. Always take a PostgreSQL backup before applying production migrations.
+The AI assistant and paper analyzer use Gemini from the server. The assistant is intended for research exploration and reasoning—not fabricated citations—and analyzer results distinguish information extracted from supplied text from AI-generated interpretation. Verify important claims against the original sources.
 
-For a production deployment, run `npm run db:migrate`, `npm run build`, then `npm start`. Express serves the generated client and API on `PORT`. Set `CLIENT_ORIGIN` if browser requests come from another origin.
+## Key Features
 
-## Environment
+- **AI Research Assistant** — Explore research questions, compare methods, and outline literature reviews with Gemini. Requires a signed-in account and server-side AI configuration.
+- **Research Paper Discovery** — Search scholarly works with title, author, topic, and publication-year filters. OpenAlex is the primary source; Crossref provides fallback paper search and DOI records.
+- **AI Paper Analyzer** — Analyze supplied paper text for objectives, methods, datasets, results, contributions, limitations, and related suggestions. Analysis history is tied to the signed-in account.
+- **Researcher Discovery** — Search researcher records and view available profile, affiliation, publication, and authorship information. OpenAlex is used when available, with a Crossref-based search fallback.
+- **Research Trends** — Explore live research concepts and publication counts by year, with OpenAlex data and Crossref keyword-result fallbacks where available.
+- **Saved Research and Collections** — Save papers and researchers and organize them into private collections.
+- **Dashboard and Research Workspaces** — View research metrics, trends, recent papers, and account activity. Create workspaces to organize papers and researchers around projects.
+- **Research Network** — Explore co-author relationships based on authors listed together in retrieved OpenAlex work records.
+- **Accounts and Profiles** — Register and sign in with password-hashed credentials and HTTP-only session cookies.
 
-Copy `.env.example` to `.env` for local development. Replit users should configure the same values as encrypted Secrets. Never put provider keys in client-side variables.
+## Screenshots
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | Required for database, account, and workspace features | PostgreSQL connection string |
-| `JWT_SECRET` | Required for registration and sign-in | At least 32 random characters; signs HTTP-only cookie sessions |
-| `GEMINI_API_KEY` | Optional until AI features are used | Server-side Google Gemini API key; never exposed to the client |
-| `OPENALEX_API_KEY` | No | Optional server-side OpenAlex key for higher authenticated API limits |
-| `OPENALEX_MAILTO` | No | Contact email sent with OpenAlex API requests |
-| `CROSSREF_MAILTO` | No | Contact email included in the Crossref request user agent |
-| `PORT` | No | Express port in production (defaults to `3001`) |
-| `API_PORT` | No | Express port in development (defaults to `3001`) |
-| `CLIENT_ORIGIN` | No | Allowed browser origin (defaults to `http://localhost:5173`) |
-| `NODE_ENV` | No | Set to `production` for production cookie/static-serving behavior |
+Screenshots will be added here.
 
-## Architecture
+<!-- Add genuine ResearchX screenshots here when available. -->
 
-- `src/`: React application, route pages, reusable components, query state, API client, and design system.
-- `server/`: Express API, authentication middleware, Prisma client, and scholarly/AI service integrations.
-- `prisma/schema.prisma`: PostgreSQL models for users, scholarly records, saved research, workspaces, analyses, chats, and research relationships.
-- Saved papers, collections, workspaces, and activity are scoped to the authenticated user. The activity feed records actions from the time this feature is deployed; older saved-item timestamps are not represented as historical actions.
-- Paper and researcher search, profiles, authorship, topic trends, and publication-year aggregates are fetched from OpenAlex. Crossref is a fallback for paper search when OpenAlex is unavailable and supplies DOI paper detail records. Provider fields absent from their records remain null and render as “Data unavailable.”
-- If OpenAlex is rate limited, the dashboard and research-trend views fall back to live Crossref keyword-result totals and publication-year facets. These are explicitly labeled as keyword matches, not as a global topic index; unavailable researcher totals remain unavailable rather than being estimated.
-- If OpenAlex researcher search is rate limited or unavailable, researcher search falls back to author names in live Crossref work results. Crossref does not supply a canonical author identity or reliable author-level totals for every name, so those metrics remain unavailable and same-name profiles may be ambiguous. Research-field and institution filters become broad text matches in this fallback, not strict filters.
-- AI endpoints call Gemini only from the server using `GEMINI_API_KEY`. The paper analyzer labels extracted paper information separately from AI-generated interpretations and suggestions, and stores the supplied text and result in the authenticated user’s analysis history. The assistant does not claim to have searched the literature unless research context is actually supplied.
-- Registration validates input, hashes passwords with bcrypt, and creates a signed, HTTP-only, same-site session cookie. Private collection APIs require authentication.
-- Workspace co-author relationships are built only from author lists in retrieved OpenAlex work records; shared topics/institutions are not treated as collaborations.
-- The original `Collection` and `SavedItem` tables are retained as the physical backing for the `ResearchCollection` and generic saved paper/researcher features. New scholarly records are normalized in `Paper`, `Author`, `Researcher`, and `ResearchTopic` tables as they are saved or added to a workspace.
+## Technology Stack
 
-## Useful commands
+| Area | Technologies |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, React Router, TanStack Query |
+| UI and charts | Tailwind CSS, Lucide React, Recharts, DM Sans, Manrope |
+| Backend | Node.js 20+, Express 5, TypeScript |
+| Database | PostgreSQL, Prisma ORM |
+| Validation and authentication | Zod, bcryptjs, JSON Web Tokens, cookie-parser |
+| Research data | OpenAlex and Crossref public APIs |
+| AI | Google Gemini Interactions API, called server-side |
+
+## Project Structure
+
+```text
+.
+├── prisma/
+│   ├── migrations/          # PostgreSQL schema migrations
+│   └── schema.prisma        # Prisma data models
+├── server/
+│   ├── middleware/          # Authentication middleware
+│   ├── services/            # Research providers, AI, and persistence
+│   ├── db.ts                # Prisma client
+│   └── index.ts             # Express API and production static server
+├── src/
+│   ├── components/          # Shared layout and UI components
+│   ├── pages/               # Application pages
+│   ├── services/            # Frontend API client
+│   ├── App.tsx              # Application routes
+│   ├── main.tsx             # Frontend entry point
+│   ├── styles.css           # Application styles
+│   └── types.ts             # Shared frontend types
+├── .env.example             # Environment variable template
+├── index.html               # Vite HTML entry
+├── package.json             # Dependencies and scripts
+├── package-lock.json        # Locked npm dependency versions
+└── vite.config.ts           # Vite configuration and API proxy
+```
+
+## Installation and Setup
+
+### Prerequisites
+
+- Node.js 20 or later and npm
+- Access to a PostgreSQL database for account, saved research, and workspace features
+- A Gemini API key to use the AI assistant and analyzer
+
+### 1. Clone the repository
+
+```sh
+git clone https://github.com/ayushiTech-25/ResearchX.git
+cd ResearchX
+```
+
+These commands work in Terminal on macOS and Linux, and in PowerShell, Windows Terminal, or Command Prompt on Windows.
+
+### 2. Install dependencies
+
+```sh
+npm ci
+```
+
+### 3. Configure the environment
+
+Copy `.env.example` to `.env` in the project root, then fill in the values described below. Keep `.env` private and do not commit it.
+
+macOS or Linux:
+
+```sh
+cp .env.example .env
+```
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### 4. Generate Prisma Client and apply database migrations
+
+Set `DATABASE_URL` in `.env` to your PostgreSQL connection string before running these commands:
+
+```sh
+npm run db:generate
+npm run db:migrate
+```
+
+### 5. Start the development application
 
 ```sh
 npm run dev
-npm run typecheck
-npm run build
-npm run db:generate
-npm run db:migrate
-npm run db:migrate:dev
 ```
+
+Open [http://localhost:5173](http://localhost:5173). The Vite development server proxies `/api` requests to the Express API on port `3001` by default.
+
+## Environment Variables
+
+Set server-side values in the root `.env` file. The examples below are placeholders, not real credentials:
+
+```dotenv
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public"
+JWT_SECRET="replace-with-a-random-secret-at-least-32-characters"
+GEMINI_API_KEY="your-gemini-api-key"
+```
+
+| Variable | Required | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | For database-backed features and migrations | PostgreSQL connection string used by Prisma |
+| `JWT_SECRET` | For registration and sign-in | Signing secret of at least 32 characters for session cookies |
+| `GEMINI_API_KEY` | For AI features | Server-side key for the Gemini assistant and paper analyzer |
+| `OPENALEX_API_KEY` | No | Optional key for authenticated OpenAlex API requests and higher limits |
+| `OPENALEX_MAILTO` | No | Optional contact email included with OpenAlex requests |
+| `CROSSREF_MAILTO` | No | Optional contact email for Crossref requests |
+| `API_PORT` | No | Development API port; defaults to `3001` |
+| `PORT` | No | Production API port; defaults to `3001` when `API_PORT` is not set |
+| `CLIENT_ORIGIN` | No | Allowed browser origin for API requests; defaults to `http://localhost:5173` |
+| `NODE_ENV` | No | Set to `production` for production cookie and static-file behavior |
+
+OpenAlex and Crossref research discovery do not require API keys for basic use. AI features remain unavailable until `GEMINI_API_KEY` is configured. Account, collection, and workspace features require a reachable PostgreSQL database and a valid `JWT_SECRET`. Never put secrets in frontend variables, source files, or URLs.
+
+## Running the Application
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start the Vite frontend and Express API together |
+| `npm run dev:client` | Start only the Vite frontend |
+| `npm run dev:server` | Start only the Express API in watch mode |
+| `npm run typecheck` | Type-check the frontend, Vite configuration, and server |
+| `npm run build` | Generate Prisma Client, type-check, build the frontend, and compile the server |
+| `npm start` | Start the built production server |
+| `npm run preview` | Preview the built frontend with Vite |
+| `npm run db:generate` | Generate Prisma Client |
+| `npm run db:migrate` | Apply checked-in Prisma migrations |
+| `npm run db:migrate:dev` | Create or apply migrations during development |
+| `npm run db:push` | Synchronize the Prisma schema directly to the configured database |
+
+For a production build, run `npm run db:migrate` and `npm run build`, then start the application with `npm start`. In production mode, Express serves the built frontend and API.
+
+## Future Enhancements
+
+Possible future improvements—not currently implemented—include:
+
+- Exporting collections and analyses to additional research-friendly formats
+- More granular search and discovery filters
+- Automated tests for key frontend and API workflows
+- Additional accessibility and localization options
+
+## Contributing
+
+Contributions are welcome:
+
+1. Open an issue to describe a proposed change or report a reproducible problem.
+2. Create a focused branch and keep changes scoped to the issue.
+3. Run `npm run typecheck` and `npm run build` before submitting.
+4. Open a pull request with a concise summary and relevant verification details.
+
+Do not include credentials, `.env` files, or personal data in commits.
+
+## License
+
+No license file has been added to this repository yet. Add a license before granting reuse or redistribution permissions.
