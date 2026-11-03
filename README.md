@@ -26,6 +26,9 @@ The AI assistant and paper analyzer use Gemini from the server. The assistant is
 
 Screenshots will be added here.
 <img width="1440" height="900" alt="dashboard" src="https://github.com/user-attachments/assets/b53e0e6c-da6f-477d-9cf0-161e51d44676" />
+<img width="1440" height="900" alt="Discover papers" src="https://github.com/user-attachments/assets/ec2053db-36bc-4906-af08-0e8518c5f343" />
+<img width="1440" height="900" alt="Al research assistant" src="https://github.com/user-attachments/assets/815837d7-5129-4ca9-8138-b54b571e75e0" />
+<img width="1440" height="900" alt="AI paper analyzer" src="https://github.com/user-attachments/assets/00e6999a-9189-4890-8b4a-cfa093f1f8c7" />
 <!-- Add genuine ResearchX screenshots here when available. -->
 
 ## Technology Stack
