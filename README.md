@@ -25,7 +25,7 @@ The AI assistant and paper analyzer use Gemini from the server. The assistant is
 ## Screenshots
 
 Screenshots will be added here.
-
+<img width="1440" height="900" alt="dashboard" src="https://github.com/user-attachments/assets/b53e0e6c-da6f-477d-9cf0-161e51d44676" />
 <!-- Add genuine ResearchX screenshots here when available. -->
 
 ## Technology Stack
@@ -175,17 +175,5 @@ Possible future improvements—not currently implemented—include:
 - Automated tests for key frontend and API workflows
 - Additional accessibility and localization options
 
-## Contributing
 
-Contributions are welcome:
 
-1. Open an issue to describe a proposed change or report a reproducible problem.
-2. Create a focused branch and keep changes scoped to the issue.
-3. Run `npm run typecheck` and `npm run build` before submitting.
-4. Open a pull request with a concise summary and relevant verification details.
-
-Do not include credentials, `.env` files, or personal data in commits.
-
-## License
-
-No license file has been added to this repository yet. Add a license before granting reuse or redistribution permissions.
