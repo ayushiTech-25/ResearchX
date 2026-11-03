@@ -1,0 +1,324 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+model ResearcherPaper {
+  researcherId String
+  paperId      String
+  authorOrder  Int?
+  institution  String?
+  researcher   Researcher @relation(fields: [researcherId], references: [id], onDelete: Cascade)
+  paper        Paper      @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+
+  @@id([researcherId, paperId])
+  @@index([paperId, authorOrder])
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String               @id @default(cuid())
+  email        String               @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  collections  ResearchCollection[]
+  workspaces   ResearchWorkspace[]
+  savedItems   SavedItem[]
+  analyses     PaperAnalysis[]
+  chats        ResearchChat[]
+  activities   ResearchActivity[]
+}
+
+model ResearchActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String
+  targetType  String
+  targetId    String?
+  targetName  String?
+  contextName String?
+  externalId  String?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model Researcher {
+  id                 String                @id @default(cuid())
+  externalId         String                @unique
+  displayName        String?
+  worksCount         Int?
+  citedByCount       Int?
+  institutionName    String?
+  institutionId      String?
+  externalUrl        String?
+  lastFetchedAt      DateTime?
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+  topics             ResearcherTopic[]
+  publications       ResearcherPaper[]
+  savedItems         SavedItem[]
+  workspaceRelations WorkspaceResearcher[]
+  outgoingRelations  ResearcherRelation[]  @relation("RelationSource")
+  incomingRelations  ResearcherRelation[]  @relation("RelationTarget")
+  linkedAuthors      Author[]
+
+  @@index([displayName])
+  @@index([institutionId])
+}
+
+model Paper {
+  id                 String            @id @default(cuid())
+  externalId         String            @unique
+  doi                String?           @unique
+  title              String?
+  abstract           String?
+  publicationYear    Int?
+  publicationDate    DateTime?
+  citedByCount       Int?
+  source             String
+  externalUrl        String?
+  lastFetchedAt      DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  authors            AuthorPaper[]
+  researchers        ResearcherPaper[]
+  topics             PaperTopic[]
+  savedItems         SavedItem[]
+  workspaceRelations WorkspacePaper[]
+  analyses           PaperAnalysis[]
+  trendRelations     ResearchTrend[]
+
+  @@index([publicationYear])
+  @@index([citedByCount])
+  @@index([title])
+  @@index([source, publicationYear])
+}
+
+model Author {
+  id           String        @id @default(cuid())
+  externalId   String?       @unique
+  displayName  String?
+  researcherId String?
+  researcher   Researcher?   @relation(fields: [researcherId], references: [id], onDelete: SetNull)
+  papers       AuthorPaper[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([displayName])
+  @@index([researcherId])
+}
+
+model AuthorPaper {
+  authorId    String
+  paperId     String
+  authorOrder Int?
+  institution String?
+  author      Author   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  paper       Paper    @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@id([authorId, paperId])
+  @@index([paperId, authorOrder])
+}
+
+model ResearchTopic {
+  id            String            @id @default(cuid())
+  externalId    String            @unique
+  name          String
+  description   String?
+  worksCount    Int?
+  citedByCount  Int?
+  lastFetchedAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  researchers   ResearcherTopic[]
+  papers        PaperTopic[]
+  trends        ResearchTrend[]
+
+  @@index([name])
+}
+
+model ResearcherTopic {
+  researcherId String
+  topicId      String
+  score        Float?
+  researcher   Researcher    @relation(fields: [researcherId], references: [id], onDelete: Cascade)
+  topic        ResearchTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([researcherId, topicId])
+  @@index([topicId, score])
+}
+
+model PaperTopic {
+  paperId String
+  topicId String
+  score   Float?
+  paper   Paper         @relation(fields: [paperId], references: [id], onDelete: Cascade)
+  topic   ResearchTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@id([paperId, topicId])
+  @@index([topicId, score])
+}
+
+model SavedItem {
+  id           String             @id @default(cuid())
+  externalId   String
+  kind         String
+  title        String
+  metadata     Json?
+  userId       String
+  collectionId String
+  paperId      String?
+  researcherId String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collection   ResearchCollection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  paper        Paper?             @relation(fields: [paperId], references: [id], onDelete: SetNull)
+  researcher   Researcher?        @relation(fields: [researcherId], references: [id], onDelete: SetNull)
+
+  @@unique([collectionId, externalId])
+  @@index([userId, createdAt])
+  @@index([collectionId, createdAt])
+  @@index([paperId])
+  @@index([researcherId])
+}
+
+model ResearchCollection {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  workspaceId String?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   ResearchWorkspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  items       SavedItem[]
+
+  @@index([userId, updatedAt])
+  @@index([workspaceId])
+  @@map("Collection")
+}
+
+model ResearchWorkspace {
+  id          String                @id @default(cuid())
+  name        String
+  description String?
+  userId      String
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collections ResearchCollection[]
+  papers      WorkspacePaper[]
+  researchers WorkspaceResearcher[]
+  chats       ResearchChat[]
+
+  @@index([userId, updatedAt])
+}
+
+model WorkspacePaper {
+  workspaceId String
+  paperId     String
+  addedAt     DateTime          @default(now())
+  workspace   ResearchWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  paper       Paper             @relation(fields: [paperId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, paperId])
+  @@index([paperId])
+}
+
+model WorkspaceResearcher {
+  workspaceId  String
+  researcherId String
+  addedAt      DateTime          @default(now())
+  workspace    ResearchWorkspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  researcher   Researcher        @relation(fields: [researcherId], references: [id], onDelete: Cascade)
+
+  @@id([workspaceId, researcherId])
+  @@index([researcherId])
+}
+
+model PaperAnalysis {
+  id           String   @id @default(cuid())
+  userId       String
+  paperId      String?
+  sourceTitle  String?
+  suppliedText String
+  result       Json
+  model        String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paper        Paper?   @relation(fields: [paperId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([paperId, createdAt])
+}
+
+model ResearchChat {
+  id          String                @id @default(cuid())
+  title       String?
+  userId      String
+  workspaceId String?
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   ResearchWorkspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  messages    ResearchChatMessage[]
+
+  @@index([userId, updatedAt])
+  @@index([workspaceId, updatedAt])
+}
+
+model ResearchChatMessage {
+  id        String       @id @default(cuid())
+  chatId    String
+  role      String
+  content   String
+  createdAt DateTime     @default(now())
+  chat      ResearchChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, createdAt])
+}
+
+model ResearchTrend {
+  id              String         @id @default(cuid())
+  topicId         String?
+  paperId         String?
+  topicName       String
+  worksCount      Int?
+  citedByCount    Int?
+  publicationYear Int?
+  snapshotAt      DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  topic           ResearchTopic? @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  paper           Paper?         @relation(fields: [paperId], references: [id], onDelete: SetNull)
+
+  @@unique([topicId, publicationYear, snapshotAt])
+  @@index([topicId, snapshotAt])
+  @@index([publicationYear, topicName])
+}
+
+model ResearcherRelation {
+  id                  String     @id @default(cuid())
+  researcherId        String
+  relatedResearcherId String
+  relationType        String
+  sharedPaperCount    Int?
+  evidence            Json?
+  createdAt           DateTime   @default(now())
+  researcher          Researcher @relation("RelationSource", fields: [researcherId], references: [id], onDelete: Cascade)
+  relatedResearcher   Researcher @relation("RelationTarget", fields: [relatedResearcherId], references: [id], onDelete: Cascade)
+
+  @@unique([researcherId, relatedResearcherId, relationType])
+  @@index([researcherId, relationType])
+  @@index([relatedResearcherId, relationType])
+}
